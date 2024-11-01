@@ -10,6 +10,10 @@ from apps.base.serializers.base import UUIDFeildSerializer
 from rest_framework import permissions
 from apps.authentication.jwt_processor.jwt_decoder import decode_jwt_token
 from apps.base.helpers.get_element import getObject
+from rest_framework.pagination import PageNumberPagination
+
+class EmployeePagination(PageNumberPagination):
+    page_size = 3 
 
 
 class EmployeeView(APIView):
@@ -44,8 +48,13 @@ class EmployeeView(APIView):
 
         if id is None:
             employee_obj = Employee.objects.filter(user__id=user)
-            employee_serializer = EmployeeSerializer(employee_obj, many=True)
-            return Response(employee_serializer.data, status=200)
+
+            paginator = EmployeePagination()
+            paginated_employees = paginator.paginate_queryset(employee_obj, request)
+            employee_serializer = EmployeeSerializer(paginated_employees, many=True)
+            return paginator.get_paginated_response(employee_serializer.data)
+            # employee_serializer = EmployeeSerializer(employee_obj, many=True)
+            # return Response(employee_serializer.data, status=200)
 
         id_serializer = UUIDFeildSerializer(data={"id": id})
         if not id_serializer.is_valid():
